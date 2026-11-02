@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 
 @dataclass(frozen=True)
@@ -16,6 +16,9 @@ class ToolCall:
     arguments: dict[str, Any]
     result: str | None = None
     error: str | None = None
+    # Identifier the recording agent gave this call, if any. It is for linking a step to other
+    # evidence (a ledger claim, a log line). Replay and scoring ignore it.
+    call_id: str | None = None
 
 
 class ReplayMismatch(Exception):
@@ -33,6 +36,16 @@ class Replayer:
         """Return replay tools for every tool name in the cassette."""
         names = {step.name for step in self._steps}
         return {name: self._make(name) for name in names}
+
+    def async_tools(self) -> dict[str, Callable[..., Awaitable[str]]]:
+        """Like :meth:`tools`, for agents whose tools are coroutines. Same order and mismatch rules."""
+        def wrap(fn: Callable[..., str]) -> Callable[..., Awaitable[str]]:
+            async def call(**arguments: Any) -> str:
+                return fn(**arguments)
+
+            return call
+
+        return {name: wrap(fn) for name, fn in self.tools().items()}
 
     def _make(self, name: str) -> Callable[..., str]:
         def call(**arguments: Any) -> str:
@@ -62,7 +75,12 @@ class Replayer:
 
 def save(calls: list[ToolCall], path: str | Path) -> None:
     """Write a cassette as sorted, indented JSON."""
-    data = [asdict(call) for call in calls]
+    data = []
+    for call in calls:
+        item = asdict(call)
+        if item["call_id"] is None:  # keep cassettes written before call ids existed byte-identical
+            del item["call_id"]
+        data.append(item)
     Path(path).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 

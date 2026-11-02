@@ -56,11 +56,29 @@ assert score(replayed.trajectory, live.trajectory).exact
 A model is any callable that takes the chat history and returns either
 `{"tool": name, "arguments": {...}}` or `{"final": answer}`.
 
+## Recording another agent's tool log
+
+Any agent that logs each executed tool call (name, arguments, the text it got back, optionally an id)
+can be turned into a cassette without importing this package into the agent:
+
+```python
+from trajectory_replay import calls_from_records, save
+
+save(calls_from_records(agent_log), "cassettes/task-01.json")
+```
+
+Records can be mappings or objects (`name`/`tool`, `arguments`/`args`, `result`/`output`, `call_id`/`id`,
+`rejected`). A call that failed is replayed as the text the agent saw; a call a person refused is left out.
+For agents whose tools are coroutines, `Replayer.async_tools()` returns async replacements with the same
+ordering and mismatch rules. `ToolCall.call_id` is carried through the cassette for linking a step to other
+evidence; matching and scoring ignore it.
+
 ## Layout
 
 - `src/trajectory_replay/cassette.py`: `ToolCall`, `Replayer`, `save`, `load`
 - `src/trajectory_replay/trajectory.py`: `score` and `TrajectoryScore`
 - `src/trajectory_replay/agent.py`: `run_agent`, a minimal tool loop
+- `src/trajectory_replay/adapters.py`: `calls_from_records`, tool log to cassette
 - `src/trajectory_replay/tools.py`: three deterministic tools (fetch, extract, write)
 - `tests/`: unit tests, using a scripted fake model
 
