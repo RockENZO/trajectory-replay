@@ -34,7 +34,7 @@ uv sync --extra dev
 uv run pytest -q
 ```
 
-Python 3.11 or newer. No API keys, GPU or network access are needed for the tests.
+Python 3.10 or newer. No API keys, GPU or network access are needed for the tests.
 
 ## Example
 
