@@ -13,12 +13,19 @@ from .cassette import ToolCall
 
 
 def _get(record: Any, *names: str, default: Any = None) -> Any:
+    """Return the first present, non-None value from the aliases.
+
+    A record may carry the same field under several names (for example ``name``
+    and ``tool``); a null primary key must not hide a usable alias.
+    """
     for name in names:
         if isinstance(record, Mapping):
-            if name in record:
+            if name in record and record[name] is not None:
                 return record[name]
         elif hasattr(record, name):
-            return getattr(record, name)
+            value = getattr(record, name)
+            if value is not None:
+                return value
     return default
 
 
