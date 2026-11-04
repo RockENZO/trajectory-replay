@@ -12,8 +12,12 @@ or network, and scores the agent's trajectory against a gold trajectory.
 - **Replay.** A recorded run is served back call by call. Any call that differs from the
   cassette (name or arguments) stops the run with `ReplayMismatch`.
 - **Trajectory match.** Predicted and gold tool calls are compared in order, using a longest
-  common subsequence on tool name and arguments. Results are ignored. The score reports
-  matched steps, precision, recall, F1 and exact match.
+  common subsequence on tool name and arguments. Results are ignored by this score. The score
+  reports matched steps, precision, recall, F1 and exact match.
+- **Output match (optional).** For the calls that matched the gold trajectory, `score_outputs`
+  compares the returned text after casefolding and collapsing whitespace. It reports how many
+  results were identical and a mean character-level similarity in [0, 1]. Calls that did not
+  match contribute nothing, so read it next to the trajectory score.
 
 Planned, not in this release: latency and token cost per step, and frozen task suites run
 against local models.
@@ -79,6 +83,7 @@ evidence; matching and scoring ignore it.
 - `src/trajectory_replay/trajectory.py`: `score` and `TrajectoryScore`
 - `src/trajectory_replay/agent.py`: `run_agent`, a minimal tool loop
 - `src/trajectory_replay/adapters.py`: `calls_from_records`, tool log to cassette
+- `src/trajectory_replay/outputs.py`: `score_outputs`, result comparison for aligned calls
 - `src/trajectory_replay/tools.py`: three deterministic tools (fetch, extract, write)
 - `tests/`: unit tests, using a scripted fake model
 
@@ -86,7 +91,7 @@ evidence; matching and scoring ignore it.
 
 - The tools are deterministic test doubles. They do not show how real web pages behave.
 - Matching is on exact arguments. Paraphrased or equivalent arguments count as mismatches.
-- Trajectory scores do not measure whether the final answer is correct. Use them alongside
+- Trajectory and output scores do not measure whether the final answer is correct. Use them alongside
   answer checks.
 - This complements observability tools such as Phoenix, Langfuse and MLflow. It does not
   replace them.
