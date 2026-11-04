@@ -79,3 +79,26 @@ def test_async_tools_replay_in_order_and_refuse_divergence():
 
     asyncio.run(go())
     replayer.assert_exhausted()
+
+
+def test_null_primary_keys_fall_back_to_present_aliases():
+    @dataclass
+    class NullableRecord:
+        name: str | None
+        tool: str
+        arguments: dict
+        result: str | None
+        output: str
+        call_id: str | None
+
+    [mapping_call] = calls_from_records([{
+        "name": None, "tool": "read", "args": {"path": "a"},
+        "result": None, "output": "alpha", "call_id": None, "id": "c9",
+    }])
+    assert mapping_call == ToolCall("read", {"path": "a"}, result="alpha", call_id="c9")
+
+    [object_call] = calls_from_records([NullableRecord(
+        name=None, tool="bash", arguments={"command": "ls"},
+        result=None, output="a.txt", call_id=None,
+    )])
+    assert object_call == ToolCall("bash", {"command": "ls"}, result="a.txt", call_id=None)
