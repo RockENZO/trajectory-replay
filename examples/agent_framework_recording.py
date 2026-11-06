@@ -17,6 +17,9 @@ from trajectory_replay import ToolCall, make_tools, save
 
 FIXTURES = {"https://shop.example/item": "PRICE: 12.50"}
 
+# What the model receives when a tool raises, with include_detailed_errors left at its default.
+FAILURE_TEXT = "Error: Function failed."
+
 PLAN = [
     ("fetch", {"url": "https://shop.example/item"}),
     ("extract", {"text": "PRICE: 12.50", "field": "PRICE"}),
@@ -52,8 +55,11 @@ class Recorder:
         def call(**arguments: Any) -> str:
             try:
                 result = fn(**arguments)
-            except Exception as exc:  # a tool error is part of the trajectory
-                self.calls.append(ToolCall(name, dict(arguments), error=str(exc)))
+            except Exception:
+                # Agent Framework returns FAILURE_TEXT to the model in place of the exception.
+                # Record that text, since it is what the agent saw, then re-raise so the
+                # framework still handles the failure.
+                self.calls.append(ToolCall(name, dict(arguments), result=FAILURE_TEXT))
                 raise
             self.calls.append(ToolCall(name, dict(arguments), result=result))
             return result
@@ -84,15 +90,15 @@ def build_agent(recorder: Recorder, plan, store: dict[str, str]):
                  instructions="Get the price and store it.", tools=[fetch, extract, write])
 
 
-async def _record_async(cassette_path: Path) -> list[ToolCall]:
+async def _record_async(cassette_path: Path, plan=None) -> list[ToolCall]:
     recorder = Recorder()
-    agent = build_agent(recorder, list(PLAN), {})
+    agent = build_agent(recorder, list(PLAN if plan is None else plan), {})
     await agent.run("get the price")
     return recorder.calls
 
 
-def record(cassette_path: Path) -> list[ToolCall]:
-    calls = asyncio.run(_record_async(cassette_path))
+def record(cassette_path: Path, plan=None) -> list[ToolCall]:
+    calls = asyncio.run(_record_async(cassette_path, plan))
     save(calls, cassette_path)
     return calls
 
