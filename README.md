@@ -81,6 +81,15 @@ pip install -e ".[dev,agents]"
 PYTHONPATH=src python -m pytest -q tests/test_openai_agents_recording.py
 ```
 
+## Microsoft Agent Framework recording
+
+`examples/agent_framework_recording.py` runs a Microsoft Agent Framework agent (`agent-framework`, 1.0 or later) whose tools record their own calls, with a scripted chat client in place of an LLM. The run is offline and needs no API key. `tests/test_agent_framework_recording.py` checks that the recorded calls replay exactly.
+
+```bash
+pip install -e ".[dev,mcp,agentframework]"
+PYTHONPATH=src python -m pytest -q tests/test_agent_framework_recording.py
+```
+
 ## Recording another agent's tool log
 
 Any agent that logs each executed tool call (name, arguments, the text it got back, optionally an id)
