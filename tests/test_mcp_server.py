@@ -51,3 +51,19 @@ def test_replay_refuses_a_different_argument_type():
     except ReplayMismatch:
         return
     raise AssertionError("expected ReplayMismatch")
+
+
+def test_non_text_content_is_refused_not_recorded_as_empty():
+    from types import SimpleNamespace
+
+    from trajectory_replay.mcp_server import result_text
+
+    text = SimpleNamespace(type="text", text="PRICE: 12.50")
+    image = SimpleNamespace(type="image", data="xx", mimeType="image/png")
+    assert result_text(SimpleNamespace(content=[text])) == "PRICE: 12.50"
+    try:
+        result_text(SimpleNamespace(content=[text, image]))
+    except ValueError as exc:
+        assert "image" in str(exc)
+    else:
+        raise AssertionError("expected ValueError for image content")

@@ -28,6 +28,21 @@ def create_server(fixtures: dict[str, str] | None = None, store: dict[str, str] 
     return server
 
 
+def result_text(result: Any) -> str:
+    """Return the text of a tool result. Any non-text content is refused, not dropped.
+
+    Cassettes store text only, so an image or embedded resource cannot be replayed faithfully.
+    Failing here is better than recording an empty string the agent never saw.
+    """
+    parts = []
+    for part in result.content:
+        kind = getattr(part, "type", None)
+        if kind != "text" or not isinstance(getattr(part, "text", None), str):
+            raise ValueError(f"unsupported MCP content for recording: {kind or type(part).__name__}")
+        parts.append(part.text)
+    return "".join(parts)
+
+
 async def record_session(
     command: Sequence[str],
     calls: Sequence[tuple[str, dict[str, Any]]],
@@ -47,7 +62,7 @@ async def record_session(
             await session.initialize()
             for name, arguments in calls:
                 result = await session.call_tool(name, arguments)
-                text = "".join(getattr(part, "text", "") for part in result.content)
+                text = result_text(result)
                 if result.isError:
                     recorded.append(ToolCall(name, dict(arguments), error=text or "tool error"))
                 else:
