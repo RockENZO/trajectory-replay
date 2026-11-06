@@ -72,6 +72,15 @@ PYTHONPATH=src python -m pytest -q tests/test_mcp_server.py
 
 The server's tools are deterministic doubles, not real web or storage tools.
 
+## OpenAI Agents SDK recording
+
+`examples/openai_agents_recording.py` runs an OpenAI Agents SDK agent whose three tools (fetch, extract, write) record their own calls. A scripted model replaces the LLM, so the run is offline and needs no API key. `tests/test_openai_agents_recording.py` checks that the recorded calls, arguments and results replay exactly. SDK tracing is off unless `OPENAI_API_KEY` is set.
+
+```bash
+pip install -e ".[dev,agents]"
+PYTHONPATH=src python -m pytest -q tests/test_openai_agents_recording.py
+```
+
 ## Recording another agent's tool log
 
 Any agent that logs each executed tool call (name, arguments, the text it got back, optionally an id)
