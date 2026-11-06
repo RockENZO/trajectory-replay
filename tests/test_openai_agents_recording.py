@@ -1,7 +1,12 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 from trajectory_replay import Replayer, load, score, score_outputs
+
+# Skip only when the optional agents extra is not installed; CI installs it.
+pytest.importorskip("agents")
 
 _SPEC = importlib.util.spec_from_file_location(
     "openai_agents_recording",
