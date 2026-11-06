@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from agents import Agent, Model, ModelResponse, Runner, Usage, function_tool
+from agents.tool import default_tool_error_function
 from openai.types.responses import ResponseFunctionToolCall
 
 from trajectory_replay import ToolCall, make_tools, save
@@ -58,8 +59,11 @@ class Recorder:
         def call(**arguments: Any) -> str:
             try:
                 result = fn(**arguments)
-            except Exception as exc:  # a tool error is part of the trajectory
-                self.calls.append(ToolCall(name, dict(arguments), error=str(exc)))
+            except Exception as exc:
+                # The SDK turns the exception into model-visible text. Record that text, since it
+                # is what the agent saw, then re-raise so the SDK still handles the failure.
+                seen = default_tool_error_function(None, exc)
+                self.calls.append(ToolCall(name, dict(arguments), result=seen))
                 raise
             self.calls.append(ToolCall(name, dict(arguments), result=result))
             return result
@@ -98,10 +102,10 @@ PLAN = [
 ]
 
 
-def record(cassette_path: Path) -> list[ToolCall]:
+def record(cassette_path: Path, plan=None) -> list[ToolCall]:
     store: dict[str, str] = {}
     recorder = Recorder()
-    agent = build_agent(store, list(PLAN), recorder)
+    agent = build_agent(store, list(PLAN if plan is None else plan), recorder)
     Runner.run_sync(agent, "get the price", max_turns=6)
     save(recorder.calls, cassette_path)
     return recorder.calls

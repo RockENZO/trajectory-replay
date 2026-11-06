@@ -33,3 +33,18 @@ def test_recorded_run_replays_exactly(tmp_path: Path) -> None:
     replayer.assert_exhausted()
     assert score(replayed, live).exact
     assert score_outputs(replayed, live).exact == 3
+
+
+def test_failed_tool_records_what_the_agent_saw(tmp_path: Path) -> None:
+    from agents.tool import default_tool_error_function
+
+    out = tmp_path / "missing.json"
+    plan = [("fetch", {"url": "https://missing.example/item"})]
+    recorded = example.record(out, plan=plan)
+    assert len(recorded) == 1
+    assert recorded[0].error is None
+    seen = default_tool_error_function(None, RuntimeError("unused"))
+    assert recorded[0].result == seen
+    # Replay returns the text the agent received, not a raised exception.
+    replayer = Replayer(load(out))
+    assert replayer.tools()["fetch"](url="https://missing.example/item") == seen
