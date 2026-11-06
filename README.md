@@ -60,6 +60,18 @@ assert score(replayed.trajectory, live.trajectory).exact
 A model is any callable that takes the chat history and returns either
 `{"tool": name, "arguments": {...}}` or `{"final": answer}`.
 
+## MCP server and client recording
+
+`trajectory_replay.mcp_server` serves the three test tools (fetch, extract, write) over the Model Context Protocol, using the official Python SDK (`mcp<2`). `record_session` is an MCP client: it calls tools on any stdio MCP server in order and returns `ToolCall` records. Save them with `save`, and replay them with `Replayer`, which refuses any call that differs in name, arguments or argument type.
+
+```bash
+pip install -e ".[dev,mcp]"
+python -m trajectory_replay.mcp_server   # serves over stdio
+PYTHONPATH=src python -m pytest -q tests/test_mcp_server.py
+```
+
+The server's tools are deterministic doubles, not real web or storage tools.
+
 ## Recording another agent's tool log
 
 Any agent that logs each executed tool call (name, arguments, the text it got back, optionally an id)
@@ -85,6 +97,7 @@ evidence; matching and scoring ignore it.
 - `src/trajectory_replay/adapters.py`: `calls_from_records`, tool log to cassette
 - `src/trajectory_replay/outputs.py`: `score_outputs`, result comparison for aligned calls
 - `src/trajectory_replay/tools.py`: three deterministic tools (fetch, extract, write)
+- `src/trajectory_replay/mcp_server.py`: the same tools as an MCP server, and an MCP client recorder
 - `tests/`: unit tests, using a scripted fake model
 
 ## Limits

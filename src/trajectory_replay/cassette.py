@@ -21,6 +21,11 @@ class ToolCall:
     call_id: str | None = None
 
 
+def _canon(value: Any) -> str:
+    """Type-aware form for comparing arguments. Python's == treats True as 1 and False as 0."""
+    return json.dumps(value, sort_keys=True, allow_nan=False)
+
+
 class ReplayMismatch(Exception):
     """Raised when a replayed run diverges from the recorded cassette."""
 
@@ -52,7 +57,7 @@ class Replayer:
             if self._pos >= len(self._steps):
                 raise ReplayMismatch(f"unexpected extra call: {name}{arguments}")
             step = self._steps[self._pos]
-            if step.name != name or step.arguments != arguments:
+            if step.name != name or _canon(step.arguments) != _canon(arguments):
                 raise ReplayMismatch(
                     f"step {self._pos}: recorded {step.name}{step.arguments}, "
                     f"got {name}{arguments}"

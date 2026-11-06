@@ -29,6 +29,7 @@ Issues = "https://github.com/RockENZO/trajectory-replay/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+mcp = ["mcp>=1.2,<2"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/trajectory_replay"]
