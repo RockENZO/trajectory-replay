@@ -12,7 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from trajectory_replay import Replayer, ToolCall, load, score, score_outputs
+pytest.importorskip("openai")  # the optional openai extra; CI installs it
+
+from trajectory_replay import Replayer, ReplayMismatch, ToolCall, load, score, score_outputs
 
 _SPEC = importlib.util.spec_from_file_location(
     "vllm_openai_recording",
@@ -110,3 +112,25 @@ def test_failed_tool_records_the_text_the_model_received(stub, tmp_path: Path) -
     assert recorded[0].result == "error: unknown url: https://missing.example/item"
     replayer = Replayer(load(out))
     assert replayer.tools()["fetch"](url="https://missing.example/item") == recorded[0].result
+
+
+
+def test_replay_mismatch_stops_the_run_instead_of_reaching_the_model(tmp_path: Path) -> None:
+    out = tmp_path / "price.json"
+    recording_server = _serve(example.PLAN)
+    try:
+        example.record(f"http://127.0.0.1:{recording_server.server_address[1]}/v1", out)
+    finally:
+        recording_server.shutdown()
+        recording_server.server_close()
+
+    replayer = Replayer(load(out))
+    # This model asks for a different URL than the cassette recorded first.
+    diverging_server = _serve([("fetch", {"url": "https://other.example/item"})])
+    try:
+        with pytest.raises(ReplayMismatch):
+            example.run(f"http://127.0.0.1:{diverging_server.server_address[1]}/v1",
+                        "Qwen/Qwen2.5-7B-Instruct", "get the price", replayer.tools())
+    finally:
+        diverging_server.shutdown()
+        diverging_server.server_close()

@@ -18,7 +18,7 @@ from typing import Any
 
 from openai import OpenAI
 
-from trajectory_replay import ToolCall, make_tools, save
+from trajectory_replay import ReplayMismatch, ToolCall, make_tools, save
 
 FIXTURES = {"https://shop.example/item": "PRICE: 12.50"}
 
@@ -96,6 +96,8 @@ def run(base_url: str, model: str, task: str, tools: dict[str, Any], max_steps: 
             arguments = json.loads(call.function.arguments or "{}")
             try:
                 result = tools[name](**arguments)
+            except ReplayMismatch:
+                raise  # a replay stops at the first divergence, it is not a tool error
             except Exception as exc:  # a tool error is part of the trajectory
                 text = f"{ERROR_PREFIX}{exc}"
                 trajectory.append(ToolCall(name, arguments, result=text))
