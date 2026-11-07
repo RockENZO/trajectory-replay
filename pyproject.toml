@@ -32,6 +32,7 @@ dev = ["pytest>=8"]
 mcp = ["mcp>=1.2,<2"]
 agents = ["openai-agents>=0.24.0"]
 agentframework = ["agent-framework-core>=1.24.0"]
+openai = ["openai>=1.40"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/trajectory_replay"]
