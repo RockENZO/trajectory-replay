@@ -90,6 +90,20 @@ pip install -e ".[dev,mcp,agentframework]"
 PYTHONPATH=src python -m pytest -q tests/test_agent_framework_recording.py
 ```
 
+## OpenAI-compatible servers (vLLM)
+
+`examples/vllm_openai_recording.py` runs the tool loop against any OpenAI-compatible `/v1/chat/completions` endpoint, such as a vLLM server. Each executed call is recorded with the text the model received, and the cassette replays exactly.
+
+```bash
+pip install -e ".[dev,openai]"
+# Live: vllm serve Qwen/Qwen2.5-7B-Instruct, then:
+PYTHONPATH=src python examples/vllm_openai_recording.py http://localhost:8000/v1 --model Qwen/Qwen2.5-7B-Instruct
+# Tests: a local stub server speaks the same wire format, so no GPU or weights are needed.
+PYTHONPATH=src python -m pytest -q tests/test_vllm_openai_recording.py
+```
+
+The tests exercise the wire format with a stub, not a real vLLM server. A live run has not been recorded in CI.
+
 ## Recording another agent's tool log
 
 Any agent that logs each executed tool call (name, arguments, the text it got back, optionally an id)
