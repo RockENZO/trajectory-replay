@@ -10,7 +10,8 @@ or network, and scores the agent's trajectory against a gold trajectory.
 ## What it measures
 
 - **Replay.** A recorded run is served back call by call. Any call that differs from the
-  cassette (name or arguments) stops the run with `ReplayMismatch`.
+  cassette (name or arguments) stops the run with `ReplayMismatch`. Saving rejects NaN and infinite
+  arguments, which cannot be compared during replay.
 - **Trajectory match.** Predicted and gold tool calls are compared in order, using a longest
   common subsequence on tool name and arguments. Results are ignored by this score. The score
   reports matched steps, precision, recall, F1 and exact match.

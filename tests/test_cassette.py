@@ -48,3 +48,15 @@ def test_recorded_errors_are_replayed_as_errors():
     cassette = [ToolCall("fetch", {"url": "x"}, error="unknown url: x")]
     with pytest.raises(RuntimeError, match="unknown url"):
         Replayer(cassette).tools()["fetch"](url="x")
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_save_rejects_nonfinite_arguments_without_replacing_cassette(tmp_path, value):
+    path = tmp_path / "cassette.json"
+    save(GOLD, path)
+    original = path.read_bytes()
+
+    with pytest.raises(ValueError, match="Out of range float"):
+        save([ToolCall("fetch", {"nested": [value]}, result="ok")], path)
+
+    assert path.read_bytes() == original
