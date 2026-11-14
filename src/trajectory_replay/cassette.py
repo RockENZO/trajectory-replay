@@ -79,14 +79,14 @@ class Replayer:
 
 
 def save(calls: list[ToolCall], path: str | Path) -> None:
-    """Write a cassette as sorted, indented JSON."""
+    """Write a cassette as sorted, indented JSON with finite numbers only."""
     data = []
     for call in calls:
         item = asdict(call)
         if item["call_id"] is None:  # keep cassettes written before call ids existed byte-identical
             del item["call_id"]
         data.append(item)
-    Path(path).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    Path(path).write_text(json.dumps(data, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")
 
 
 def load(path: str | Path) -> list[ToolCall]:
